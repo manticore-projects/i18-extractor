@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.manticore'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.github.javaparser:javaparser-core:3.26.2'
+}
+
+application {
+    mainClass = 'com.manticore.i18n.Main'
+}
+
+// Allow:
+//   gradle run --args="path/to/project"
+//   gradle run -Pfolder=path/to/project
+//   gradle run -Pfolder=path/to/project -PdryRun -Plocale=en -Pbundle=messages
+//   gradle run -Pfolder=path/to/project -Psrc=src/main/java -Pres=src/main/resources
+tasks.named('run') {
+    List<String> extra = []
+    if (project.hasProperty('folder'))   extra << project.property('folder').toString()
+    if (project.hasProperty('bundle'))   extra.addAll(['--bundle', project.property('bundle').toString()])
+    if (project.hasProperty('locale'))   extra.addAll(['--locale', project.property('locale').toString()])
+    if (project.hasProperty('helperPackage')) extra.addAll(['--helper-package', project.property('helperPackage').toString()])
+    if (project.hasProperty('src'))      extra.addAll(['--src', project.property('src').toString()])
+    if (project.hasProperty('res'))      extra.addAll(['--res', project.property('res').toString()])
+    if (project.hasProperty('dryRun'))   extra << '--dry-run'
+    if (project.hasProperty('emitHelper')) extra << '--emit-helper'
+    if (project.hasProperty('check'))    extra << '--check'
+    if (project.hasProperty('uiConstructor')) {
+        // Comma-separated list of specs: -PuiConstructor=Action:1,3;Tab:0
+        // (use ';' as outer separator since ',' is part of each spec)
+        project.property('uiConstructor').toString().split(';').each { spec ->
+            extra.addAll(['--ui-constructor', spec.trim()])
+        }
+    }
+    if (!extra.isEmpty()) args extra
+}
