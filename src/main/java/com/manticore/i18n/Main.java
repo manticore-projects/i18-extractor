@@ -58,18 +58,20 @@ public final class Main {
         boolean emitHelper = false;
         boolean check = false;
         Map<String, int[]> uiConstructors = new HashMap<>();
+        Set<String> constraintMethods = new HashSet<>();
 
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
-                case "--bundle"         -> bundleName    = args[++i];
-                case "--locale"         -> locale        = args[++i];
-                case "--helper-package" -> helperPackage = args[++i];
-                case "--src"            -> srcRel        = args[++i];
-                case "--res"            -> resRel        = args[++i];
-                case "--dry-run"        -> dryRun        = true;
-                case "--emit-helper"    -> emitHelper    = true;
-                case "--check"          -> { check = true; dryRun = true; }
-                case "--ui-constructor" -> parseUiConstructor(args[++i], uiConstructors);
+                case "--bundle"            -> bundleName    = args[++i];
+                case "--locale"            -> locale        = args[++i];
+                case "--helper-package"    -> helperPackage = args[++i];
+                case "--src"               -> srcRel        = args[++i];
+                case "--res"               -> resRel        = args[++i];
+                case "--dry-run"           -> dryRun        = true;
+                case "--emit-helper"       -> emitHelper    = true;
+                case "--check"             -> { check = true; dryRun = true; }
+                case "--ui-constructor"    -> parseUiConstructor(args[++i], uiConstructors);
+                case "--constraint-method" -> constraintMethods.add(args[++i]);
                 default -> {
                     System.err.println("Unknown option: " + args[i]);
                     printUsage();
@@ -110,7 +112,7 @@ public final class Main {
             System.out.println("[i18n] loaded " + bundle.size() + " existing entries");
         }
 
-        Extractor extractor = new Extractor(bundle, helperPackage, uiConstructors);
+        Extractor extractor = new Extractor(bundle, helperPackage, uiConstructors, constraintMethods);
 
         int filesScanned = 0, filesModified = 0, totalExtractions = 0;
         List<Path> sources;
@@ -380,20 +382,31 @@ public final class Main {
               <folder>/src/main/resources  bundle output
 
             Options:
-              --bundle <name>          base name for the bundle (default: messages)
-              --locale <code>          locale suffix for source bundle (default: en)
-              --helper-package <pkg>   package of the I18n helper class (default: com.manticore.i18n)
-              --src <relative-path>    source root relative to project (default: src/main/java)
-              --res <relative-path>    resources root relative to project (default: src/main/resources)
-              --dry-run                analyse only, do not write files
-              --emit-helper            write the I18n.java helper into the project
-              --check                  CI mode: dry-run + non-zero exit if any issues
-              --ui-constructor <SPEC>  register a custom UI constructor pattern.
-                                       SPEC format: ClassName:pos1,pos2,...
-                                       Example: --ui-constructor Action:1,3
-                                       (Built-in: JButton, JLabel, JMenu, JMenuItem,
-                                        JCheckBox, JRadioButton, JToggleButton,
-                                        JFrame, JDialog, AbstractAction — all at pos 0)
+              --bundle <name>             base name for the bundle (default: messages)
+              --locale <code>             locale suffix for source bundle (default: en)
+              --helper-package <pkg>      package of the I18n helper class (default: com.manticore.i18n)
+              --src <relative-path>       source root relative to project (default: src/main/java)
+              --res <relative-path>       resources root relative to project (default: src/main/resources)
+              --dry-run                   analyse only, do not write files
+              --emit-helper               write the I18n.java helper into the project
+              --check                     CI mode: dry-run + non-zero exit if any issues
+              --ui-constructor <SPEC>     register a custom UI/text constructor pattern.
+                                          SPEC format: ClassName:pos1,pos2,...
+                                          Example: --ui-constructor Action:1,3
+                                          (Built-in Swing: JButton, JLabel, JMenu, JMenuItem,
+                                           JCheckBox, JRadioButton, JToggleButton, JFrame,
+                                           JDialog, AbstractAction, ProgressMonitor, etc.)
+                                          (Built-in exceptions: Exception, RuntimeException,
+                                           IllegalArgumentException, IllegalStateException,
+                                           UnsupportedOperationException, IOException,
+                                           SQLException — message at pos 0)
+              --constraint-method <name>  register a method whose String arguments are
+                                          constraint strings of the form
+                                          "key1=value1,key2=value2,..." — for label/tooltip
+                                          values, adds bundle entries WITHOUT rewriting the
+                                          call site. The runtime helper (e.g. GridBagPane)
+                                          looks up translations via I18n.localize(text).
+                                          Example: --constraint-method add
             """);
     }
 }

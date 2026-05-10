@@ -47,5 +47,11 @@ tasks.named('run') {
             extra.addAll(['--ui-constructor', spec.trim()])
         }
     }
+    if (project.hasProperty('constraintMethod')) {
+        // Comma-separated list of method names: -PconstraintMethod=add,configure
+        project.property('constraintMethod').toString().split(',').each { name ->
+            extra.addAll(['--constraint-method', name.trim()])
+        }
+    }
     if (!extra.isEmpty()) args extra
 }

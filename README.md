@@ -36,10 +36,78 @@ small `I18n.tr(...)` helper.
   too easy.
 
   Custom classes registered via `--ui-constructor ClassName:pos1,pos2,...`.
+
+- **Exception messages** — `throw new Exception("message")` and friends.
+  Built-in coverage:
+
+  | Class | Position |
+  |-------|----------|
+  | `Exception`, `RuntimeException` | 0 |
+  | `IllegalArgumentException`, `IllegalStateException`, `UnsupportedOperationException` | 0 |
+  | `IOException`, `SQLException` | 0 |
+
+  Concatenation chains like
+  `new Exception("User " + uid + " not allowed to write")` are flattened to a
+  MessageFormat pattern with the dynamic parts as positional arguments — same
+  treatment as `String.format(...)`.
+
+  Deliberately excluded: `NullPointerException`, `ClassCastException`,
+  `NumberFormatException`, `ConcurrentModificationException` — typically
+  programmatic, not user-facing prose. Add via `--ui-constructor
+  YourException:0` for project-specific exception classes.
+
+- **Constraint-method strings** — for helper classes like `GridBagPane.add(c,
+  "label=Account:,tooltip=The user account.")` that take a comma-separated
+  `key=value` configuration string. Register the method name with
+  `--constraint-method add` and the extractor:
+
+  - parses the string via `split(",+")` (matching `GridBagPane`'s own parser);
+  - for each `label=`, `tooltip=`, or `setToolTipText=` value, strips the
+    `GridBagPane` prefix markers (`!`, `*`, `?`, `+`) and adds a bundle entry
+    keyed by the value's slug;
+  - **does not modify the call site** — the runtime helper looks up the
+    translation via `I18n.localize(value)` (which computes the same slug) and
+    falls back to the original literal on miss.
+
+  This pairs with the `localize` / `slugify` methods on `I18n.java`. See the
+  patched `GridBagPane.java` deliverable for the runtime side.
 - **Static `Object[][]` menu/toolbar definitions**: rows of
   `{categoryLabel, new SomeAction[]{...}}` — the row's first String literal is
   extracted *if* the row also contains an array creation of a registered UI
   constructor type (so plain data tables don't get caught).
+- **`@I18N` comment directive on any 2D array** (field or local variable):
+  forces extraction by column without requiring a registered UI constructor.
+  Two syntaxes:
+
+  ```java
+  // @I18N(1, 3)              <-- numeric: extract columns 1 and 3 of every row
+  // @I18N("KEY, TEXT, SKIP, TEXT")  <-- role-based:
+  //   KEY  = identifier column; its value becomes the bundle-key prefix
+  //   TEXT = user-facing text; extract and translate
+  //   SKIP = ignored
+  ```
+
+  Example — extracting button labels and tooltips with semantic keys:
+
+  ```java
+  // @I18N("KEY,TEXT,TEXT")
+  buttonsDef = new String[][] {
+      {"etlButton",    "ETL",            "Manage ETL Files"},
+      {"reportButton", "Reports",        "Build Reports"},
+      {"adminButton",  "Administration", "Configuration and Administration"}
+  };
+  ```
+
+  Yields bundle keys `<ClassName>.etlButton = ETL` for the first TEXT cell of
+  each row (using the KEY value verbatim) and `<ClassName>.etlButton.manage.etl.files
+  = Manage ETL Files` for subsequent TEXT cells (KEY value + slug of the text).
+  Without a KEY column, falls back to the normal slug-from-text key generation.
+
+  For the menu-array pattern with category labels and inner UI constructors,
+  combine `@I18N(0)` (or `@I18N("TEXT")`) on the field — to extract category
+  strings — with `--ui-constructor Action:1,3` for the inner Action constructor
+  arguments. The two mechanisms are complementary: one for the outer array, one
+  for the nested constructors.
 - Arbitrary nesting of all the above
 
 ## Project layout expected
