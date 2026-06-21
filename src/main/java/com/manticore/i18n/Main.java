@@ -4,6 +4,9 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import java.io.IOException;
@@ -100,7 +103,7 @@ public final class Main {
         System.out.println();
 
         ParserConfiguration cfg = new ParserConfiguration()
-            .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
+                                          .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
         JavaParser parser = new JavaParser(cfg);
 
         // Bundle accumulator: insertion-ordered for stable output
@@ -118,9 +121,9 @@ public final class Main {
         List<Path> sources;
         try (Stream<Path> stream = Files.walk(javaSrc)) {
             sources = stream
-                .filter(p -> p.toString().endsWith(".java"))
-                .sorted()
-                .toList();
+                              .filter(p -> p.toString().endsWith(".java"))
+                              .sorted()
+                              .toList();
         }
 
         for (Path javaFile : sources) {
@@ -148,10 +151,10 @@ public final class Main {
                     Files.writeString(javaFile, newSrc, StandardCharsets.UTF_8);
                 }
                 System.out.printf("[%s] %s (+%d, bundle=%d)%n",
-                    dryRun ? "DRY" : "MOD",
-                    root.relativize(javaFile),
-                    extractionsHere,
-                    bundle.size() - beforeSize);
+                                  dryRun ? "DRY" : "MOD",
+                                  root.relativize(javaFile),
+                                  extractionsHere,
+                                  bundle.size() - beforeSize);
             }
         }
 
@@ -160,11 +163,6 @@ public final class Main {
         System.out.printf("[i18n] modified  %d file(s)%n", filesModified);
         System.out.printf("[i18n] extracted %d call site(s)%n", totalExtractions);
         System.out.printf("[i18n] bundle    %d entr(y/ies)%n", bundle.size());
-
-        if (!dryRun && totalExtractions > 0) {
-            BundleIO.write(bundlePath, bundle);
-            System.out.println("[i18n] wrote     " + bundlePath);
-        }
 
         if (emitHelper && !dryRun) {
             Path helperPath = javaSrc.resolve(helperPackage.replace('.', '/')).resolve("I18n.java");
@@ -180,7 +178,8 @@ public final class Main {
         // -- Post-extraction maintenance reports -----------------------------------
         // Always run; useful both in extract mode (to spot drift) and check mode.
 
-        Set<String> referencedKeys = scanReferencedKeys(javaSrc, parser);
+        Map<String, TrRef> refs = scanTrReferences(javaSrc, parser);
+        Set<String> referencedKeys = refs.keySet();
         Set<String> orphans = new TreeSet<>(bundle.keySet());
         orphans.removeAll(referencedKeys);
 
@@ -193,11 +192,42 @@ public final class Main {
         if (!orphans.isEmpty()) {
             System.out.println();
             System.out.printf("[i18n] %d orphan key(s) — present in bundle, no I18n.tr() reference in source:%n",
-                orphans.size());
+                              orphans.size());
             for (String k : orphans) {
                 System.out.println("       - " + k);
             }
             System.out.println("       (annotate dynamic keys with //$NLS-KEEP$ key1,key2 to silence)");
+        }
+
+        // Unresolved-key report + auto-fill — the mirror image of the orphan report.
+        // These are keys referenced by I18n.tr("literal", ...) that have no entry in
+        // the bundle yet (typically hand-written ahead of extraction). Outside of
+        // dry-run we fill each with a best-effort English value: the humanised key
+        // plus one {0..n-1} placeholder per call argument. Values are deliberately
+        // rough — review them in the diff and refine in the bundle.
+        Set<String> unresolved = new TreeSet<>(refs.keySet());
+        unresolved.removeAll(bundle.keySet());
+        unresolved.removeAll(kept);          // honour //$NLS-KEEP$ for dynamic keys
+
+        int filled = 0;
+        if (!unresolved.isEmpty()) {
+            System.out.println();
+            System.out.printf("[i18n] %d unresolved key(s) — referenced by I18n.tr(...), absent from the bundle:%n",
+                              unresolved.size());
+            for (String k : unresolved) {
+                TrRef ref = refs.get(k);
+                String value = Extractor.suggestValue(k, ref.argCount());
+                if (!dryRun) {
+                    bundle.put(k, value);
+                    filled++;
+                }
+                System.out.printf("       %s %s = %s   (%s:%d)%n",
+                                  dryRun ? "?" : "+", k, value,
+                                  root.relativize(ref.file()), ref.line());
+            }
+            System.out.println(dryRun
+                               ? "       (run without --dry-run to add these to the bundle)"
+                               : "       (best-effort values — review the diff and refine as needed)");
         }
 
         // Translation-gap report: keys present in source bundle but missing from
@@ -209,7 +239,7 @@ public final class Main {
             if (missing.isEmpty()) continue;
             System.out.println();
             System.out.printf("[i18n] %s missing %d translation(s):%n",
-                other.getFileName(), missing.size());
+                              other.getFileName(), missing.size());
             int shown = 0;
             for (String k : missing) {
                 if (shown++ >= 20) {
@@ -220,10 +250,18 @@ public final class Main {
             }
         }
 
+        // Single bundle write — covers both extraction additions and unresolved fills.
+        if (!dryRun && (totalExtractions > 0 || filled > 0)) {
+            BundleIO.write(bundlePath, bundle);
+            System.out.println();
+            System.out.println("[i18n] wrote     " + bundlePath + " (" + bundle.size() + " entries)");
+        }
+
         if (check) {
             boolean anyIssues = totalExtractions > 0
-                || !orphans.isEmpty()
-                || missingByLocale.values().stream().anyMatch(s -> !s.isEmpty());
+                                        || !unresolved.isEmpty()
+                                        || !orphans.isEmpty()
+                                        || missingByLocale.values().stream().anyMatch(s -> !s.isEmpty());
             if (anyIssues) {
                 System.out.println();
                 System.out.println("[i18n] CHECK FAILED — see above for issues");
@@ -234,32 +272,54 @@ public final class Main {
         }
     }
 
-    /** Find all I18n.tr("key", ...) calls in source and return the set of literal keys. */
-    private static Set<String> scanReferencedKeys(Path javaSrc, JavaParser parser) throws IOException {
-        Set<String> keys = new HashSet<>();
+    /**
+     * A static reference to a key via {@code I18n.tr("key", arg, ...)}: where the
+     * first such call lives (for reporting) and the call's argument count (for
+     * placeholder generation). {@code argCount} is the MAX seen across all call
+     * sites, so a suggested value never has fewer placeholders than some call site
+     * supplies its arguments to.
+     */
+    record TrRef(Path file, int line, int argCount) {}
+
+    /**
+     * Find all {@code I18n.tr("literal", ...)} calls and index them by key. Only
+     * string-literal first arguments are recorded — computed keys can't be matched
+     * against the bundle statically (annotate those with {@code //$NLS-KEEP$}).
+     */
+    private static Map<String, TrRef> scanTrReferences(Path javaSrc, JavaParser parser) throws IOException {
+        Map<String, TrRef> refs = new HashMap<>();
         try (Stream<Path> stream = Files.walk(javaSrc)) {
-            List<Path> files = stream.filter(p -> p.toString().endsWith(".java")).toList();
+            List<Path> files = stream.filter(p -> p.toString().endsWith(".java")).sorted().toList();
             for (Path file : files) {
                 ParseResult<CompilationUnit> r = parser.parse(file);
                 if (!r.isSuccessful() || r.getResult().isEmpty()) continue;
                 CompilationUnit cu = r.getResult().get();
-                for (var call : cu.findAll(com.github.javaparser.ast.expr.MethodCallExpr.class)) {
+                for (MethodCallExpr call : cu.findAll(MethodCallExpr.class)) {
                     if (!"tr".equals(call.getNameAsString())) continue;
-                    if (call.getScope().orElse(null) instanceof com.github.javaparser.ast.expr.NameExpr scope
-                        && "I18n".equals(scope.getNameAsString())
-                        && !call.getArguments().isEmpty()
-                        && call.getArgument(0) instanceof com.github.javaparser.ast.expr.StringLiteralExpr lit) {
-                        keys.add(lit.asString());
+                    if (!(call.getScope().orElse(null) instanceof NameExpr scope)) continue;
+                    if (!"I18n".equals(scope.getNameAsString())) continue;
+                    if (call.getArguments().isEmpty()) continue;
+                    if (!(call.getArgument(0) instanceof StringLiteralExpr lit)) continue;
+
+                    String key = lit.asString();
+                    int argCount = call.getArguments().size() - 1;   // first arg is the key
+                    int line = call.getRange().map(rg -> rg.begin.line).orElse(0);
+
+                    TrRef prev = refs.get(key);
+                    if (prev == null) {
+                        refs.put(key, new TrRef(file, line, argCount));
+                    } else if (argCount > prev.argCount()) {
+                        refs.put(key, new TrRef(prev.file(), prev.line(), argCount));
                     }
                 }
             }
         }
-        return keys;
+        return refs;
     }
 
     /** Parse //$NLS-KEEP$ key1,key2 comments and collect the listed keys. */
     private static final java.util.regex.Pattern NLS_KEEP =
-        java.util.regex.Pattern.compile("//\\s*\\$NLS-KEEP\\$\\s*([\\w.,\\s-]+)");
+            java.util.regex.Pattern.compile("//\\s*\\$NLS-KEEP\\$\\s*([\\w.,\\s-]+)");
 
     private static Set<String> scanKeepAnnotations(Path javaSrc) throws IOException {
         Set<String> kept = new HashSet<>();
@@ -288,12 +348,12 @@ public final class Main {
 
         try (Stream<Path> stream = Files.list(resSrc)) {
             List<Path> peers = stream
-                .filter(p -> {
-                    String n = p.getFileName().toString();
-                    return n.startsWith(prefix) && n.endsWith(".properties") && !n.equals(selfName);
-                })
-                .sorted()
-                .toList();
+                                       .filter(p -> {
+                                           String n = p.getFileName().toString();
+                                           return n.startsWith(prefix) && n.endsWith(".properties") && !n.equals(selfName);
+                                       })
+                                       .sorted()
+                                       .toList();
             for (Path peer : peers) {
                 Map<String, String> other = new LinkedHashMap<>();
                 BundleIO.load(peer, other);
@@ -357,7 +417,7 @@ public final class Main {
         int colon = spec.indexOf(':');
         if (colon <= 0 || colon == spec.length() - 1) {
             System.err.println("Bad --ui-constructor spec: " + spec
-                + " (expected: ClassName:pos1,pos2,...)");
+                                       + " (expected: ClassName:pos1,pos2,...)");
             System.exit(1);
         }
         String className = spec.substring(0, colon).trim();
@@ -367,7 +427,7 @@ public final class Main {
             for (int i = 0; i < parts.length; i++) positions[i] = Integer.parseInt(parts[i].trim());
         } catch (NumberFormatException e) {
             System.err.println("Bad --ui-constructor spec: " + spec
-                + " (positions must be integers)");
+                                       + " (positions must be integers)");
             System.exit(1);
         }
         into.put(className, positions);

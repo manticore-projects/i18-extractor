@@ -20,7 +20,7 @@ small `I18n.tr(...)` helper.
   standard `javax.swing` classes:
 
   | Class | Position(s) |
-  |-------|-------------|
+    |-------|-------------|
   | `JButton`, `JCheckBox`, `JCheckBoxMenuItem`, `JRadioButton`, `JRadioButtonMenuItem`, `JToggleButton` | 0 |
   | `JLabel`, `JMenu`, `JMenuItem`, `JPopupMenu` | 0 |
   | `JFrame`, `JInternalFrame`, `JOptionPane`, `JToolBar` | 0 |
@@ -41,7 +41,7 @@ small `I18n.tr(...)` helper.
   Built-in coverage:
 
   | Class | Position |
-  |-------|----------|
+    |-------|----------|
   | `Exception`, `RuntimeException` | 0 |
   | `IllegalArgumentException`, `IllegalStateException`, `UnsupportedOperationException` | 0 |
   | `IOException`, `SQLException` | 0 |
@@ -61,13 +61,13 @@ small `I18n.tr(...)` helper.
   `key=value` configuration string. Register the method name with
   `--constraint-method add` and the extractor:
 
-  - parses the string via `split(",+")` (matching `GridBagPane`'s own parser);
-  - for each `label=`, `tooltip=`, or `setToolTipText=` value, strips the
-    `GridBagPane` prefix markers (`!`, `*`, `?`, `+`) and adds a bundle entry
-    keyed by the value's slug;
-  - **does not modify the call site** — the runtime helper looks up the
-    translation via `I18n.localize(value)` (which computes the same slug) and
-    falls back to the original literal on miss.
+    - parses the string via `split(",+")` (matching `GridBagPane`'s own parser);
+    - for each `label=`, `tooltip=`, or `setToolTipText=` value, strips the
+      `GridBagPane` prefix markers (`!`, `*`, `?`, `+`) and adds a bundle entry
+      keyed by the value's slug;
+    - **does not modify the call site** — the runtime helper looks up the
+      translation via `I18n.localize(value)` (which computes the same slug) and
+      falls back to the original literal on miss.
 
   This pairs with the `localize` / `slugify` methods on `I18n.java`. See the
   patched `GridBagPane.java` deliverable for the runtime side.
@@ -222,7 +222,7 @@ Recommended workflow for ongoing maintenance:
 
 ## Maintenance reports (run on every invocation)
 
-The tool emits two reports after every run:
+The tool emits three reports after every run:
 
 **Orphan keys** — bundle entries with no `I18n.tr(...)` reference in source.
 Usually caused by a UI element being deleted without removing the bundle entry.
@@ -237,10 +237,41 @@ String key = "Status." + status.name();
 return I18n.tr(key);
 ```
 
+**Unresolved keys** — the mirror image of orphan keys: a key passed to
+`I18n.tr("literal", ...)` that has **no entry in the bundle yet**. This happens
+when a developer hand-writes the key ahead of (or instead of) extraction, e.g.
+
+```java
+JOptionPane.showMessageDialog(this, I18n.tr("DataCaptureUploadPane.success"), ...);
+```
+
+with no `DataCaptureUploadPane.success` line in `messages_en.properties`. At
+runtime the `I18n.tr` helper would fall back to rendering the raw key string to
+the user, so these are real defects.
+
+Unlike orphans, unresolved keys are **auto-filled** (outside `--dry-run`): the
+key is added to the source bundle with a best-effort English value derived from
+the key itself —
+
+- a leading `ClassName.` segment is dropped, the remaining dot-words are
+  title-cased and space-joined (`DataCaptureUploadPane.select.file` → `Select File`);
+- one `{0..n-1}` `MessageFormat` placeholder is appended per call argument, using
+  the **maximum** arity seen across all call sites
+  (`I18n.tr("…failure.on.step", id)` → `Failure On Step {0}`).
+
+The values are deliberately rough — a sensible starting point to refine in the
+bundle, not a finished translation. They show up as ordinary additions in the
+bundle diff for review. Only string-literal first arguments are considered;
+computed keys are skipped (use `//$NLS-KEEP$` for those). In `--dry-run` /
+`--check` the keys are reported but not written, and `--check` exits non-zero
+when any remain.
+
 **Missing translations** — keys present in `messages_en.properties` but absent
 or blank in any sibling `messages_*.properties` file. Gives the translator a
 clear worklist after each extraction sweep. The tool reports only — translation
-itself is out of scope.
+itself is out of scope. (Auto-filled unresolved keys are folded into this report
+too, so a freshly hand-written key surfaces as a translation gap in the other
+locales on the same run.)
 
 ## When English text changes
 

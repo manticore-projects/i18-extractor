@@ -42,19 +42,19 @@ public final class Extractor {
 
     /** Method names whose String arguments are user-facing UI text. */
     private static final Set<String> UI_METHODS = Set.of(
-        // text-bearing setters
-        "setText", "setTitle", "setToolTipText", "setLabel",
-        "setApproveButtonText", "setApproveButtonToolTipText", "setDialogTitle",
-        "setNote",
-        // dialogs
-        "showMessageDialog", "showConfirmDialog", "showInputDialog", "showOptionDialog",
-        "showInternalMessageDialog", "showInternalConfirmDialog",
-        "showInternalInputDialog", "showInternalOptionDialog",
-        // borders
-        "createTitledBorder", "createEtchedBorder",
-        // tabs / nodes
-        "addTab", "insertTab", "setTitleAt"
-    );
+            // text-bearing setters
+            "setText", "setTitle", "setToolTipText", "setLabel",
+            "setApproveButtonText", "setApproveButtonToolTipText", "setDialogTitle",
+            "setNote",
+            // dialogs
+            "showMessageDialog", "showConfirmDialog", "showInputDialog", "showOptionDialog",
+            "showInternalMessageDialog", "showInternalConfirmDialog",
+            "showInternalInputDialog", "showInternalOptionDialog",
+            // borders
+            "createTitledBorder", "createEtchedBorder",
+            // tabs / nodes
+            "addTab", "insertTab", "setTitleAt"
+                                                        );
 
     /** Sealed shape: a piece of a + concatenation. */
     sealed interface Part {
@@ -84,7 +84,7 @@ public final class Extractor {
      * Group 1 captures the content inside the parentheses.
      */
     private static final Pattern I18N_COMMENT_PATTERN =
-        Pattern.compile("@I18N\\s*\\(([^)]+)\\)");
+            Pattern.compile("@I18N\\s*\\(([^)]+)\\)");
 
     /** Result of extracting a single translatable expression. */
     record Translatable(String pattern, List<Expression> args, List<Node> cleanup) {
@@ -94,7 +94,7 @@ public final class Extractor {
     }
 
     private static final Pattern PRINTF_SPEC = Pattern.compile(
-        "%(?:(\\d+)\\$)?[-#+ 0,(]*\\d*(?:\\.\\d+)?([a-zA-Z%])");
+            "%(?:(\\d+)\\$)?[-#+ 0,(]*\\d*(?:\\.\\d+)?([a-zA-Z%])");
     private static final Pattern MF_PLACEHOLDER = Pattern.compile("\\{(\\d+)([,}])");
 
     /**
@@ -116,47 +116,47 @@ public final class Extractor {
      * the simple names collide with user-defined classes too often.
      */
     private static final Map<String, int[]> BUILTIN_UI_CTORS = Map.ofEntries(
-        // Buttons and toggles
-        Map.entry("JButton",                new int[]{0}),
-        Map.entry("JCheckBox",              new int[]{0}),
-        Map.entry("JCheckBoxMenuItem",      new int[]{0}),
-        Map.entry("JRadioButton",           new int[]{0}),
-        Map.entry("JRadioButtonMenuItem",   new int[]{0}),
-        Map.entry("JToggleButton",          new int[]{0}),
-        // Labels and menus
-        Map.entry("JLabel",                 new int[]{0}),
-        Map.entry("JMenu",                  new int[]{0}),
-        Map.entry("JMenuItem",              new int[]{0}),
-        Map.entry("JPopupMenu",             new int[]{0}),
-        // Top-level windows / panes
-        Map.entry("JFrame",                 new int[]{0}),
-        Map.entry("JInternalFrame",         new int[]{0}),
-        Map.entry("JOptionPane",            new int[]{0}),
-        Map.entry("JDialog",                new int[]{0, 1}),     // (String title) or (Owner, String title)
-        // Tool bars
-        Map.entry("JToolBar",               new int[]{0}),
-        // Actions
-        Map.entry("AbstractAction",         new int[]{0}),
-        // Borders
-        Map.entry("TitledBorder",           new int[]{0, 1}),     // (String) or (Border, String)
-        // Progress monitor
-        Map.entry("ProgressMonitor",        new int[]{1, 2}),     // (parent, message, note, ...)
-        // Exception types — message at position 0. The + concatenation handler in
-        // extractTranslatable picks up multi-part patterns like
-        //   throw new Exception("User " + uid + " not allowed")
-        // and produces a single MessageFormat pattern with one argument.
-        // Deliberately excluded: NullPointerException, ClassCastException,
-        // NumberFormatException, ConcurrentModificationException — these are
-        // typically programmatic, not user-facing prose. Add via --ui-constructor
-        // for project-specific exception classes (BusinessException, etc.).
-        Map.entry("Exception",                     new int[]{0}),
-        Map.entry("RuntimeException",              new int[]{0}),
-        Map.entry("IllegalArgumentException",      new int[]{0}),
-        Map.entry("IllegalStateException",         new int[]{0}),
-        Map.entry("UnsupportedOperationException", new int[]{0}),
-        Map.entry("IOException",                   new int[]{0}),
-        Map.entry("SQLException",                  new int[]{0})
-    );
+            // Buttons and toggles
+            Map.entry("JButton",                new int[]{0}),
+            Map.entry("JCheckBox",              new int[]{0}),
+            Map.entry("JCheckBoxMenuItem",      new int[]{0}),
+            Map.entry("JRadioButton",           new int[]{0}),
+            Map.entry("JRadioButtonMenuItem",   new int[]{0}),
+            Map.entry("JToggleButton",          new int[]{0}),
+            // Labels and menus
+            Map.entry("JLabel",                 new int[]{0}),
+            Map.entry("JMenu",                  new int[]{0}),
+            Map.entry("JMenuItem",              new int[]{0}),
+            Map.entry("JPopupMenu",             new int[]{0}),
+            // Top-level windows / panes
+            Map.entry("JFrame",                 new int[]{0}),
+            Map.entry("JInternalFrame",         new int[]{0}),
+            Map.entry("JOptionPane",            new int[]{0}),
+            Map.entry("JDialog",                new int[]{0, 1}),     // (String title) or (Owner, String title)
+            // Tool bars
+            Map.entry("JToolBar",               new int[]{0}),
+            // Actions
+            Map.entry("AbstractAction",         new int[]{0}),
+            // Borders
+            Map.entry("TitledBorder",           new int[]{0, 1}),     // (String) or (Border, String)
+            // Progress monitor
+            Map.entry("ProgressMonitor",        new int[]{1, 2}),     // (parent, message, note, ...)
+            // Exception types — message at position 0. The + concatenation handler in
+            // extractTranslatable picks up multi-part patterns like
+            //   throw new Exception("User " + uid + " not allowed")
+            // and produces a single MessageFormat pattern with one argument.
+            // Deliberately excluded: NullPointerException, ClassCastException,
+            // NumberFormatException, ConcurrentModificationException — these are
+            // typically programmatic, not user-facing prose. Add via --ui-constructor
+            // for project-specific exception classes (BusinessException, etc.).
+            Map.entry("Exception",                     new int[]{0}),
+            Map.entry("RuntimeException",              new int[]{0}),
+            Map.entry("IllegalArgumentException",      new int[]{0}),
+            Map.entry("IllegalStateException",         new int[]{0}),
+            Map.entry("UnsupportedOperationException", new int[]{0}),
+            Map.entry("IOException",                   new int[]{0}),
+            Map.entry("SQLException",                  new int[]{0})
+                                                                            );
 
     private final Map<String, String> bundle;
     private final Map<String, String> reverseBundle = new HashMap<>();
@@ -172,8 +172,8 @@ public final class Extractor {
      * each {@code key=value} pair inside a constraint string.
      */
     private static final Set<String> TRANSLATABLE_CONSTRAINT_KEYS = Set.of(
-        "label", "tooltip", "settooltiptext"
-    );
+            "label", "tooltip", "settooltiptext"
+                                                                          );
 
     // Per-file state, reset on each processFile() call
     private String currentClass = "";
@@ -208,7 +208,7 @@ public final class Extractor {
 
     public void processFile(Path file, CompilationUnit cu) {
         currentClass = cu.getPrimaryTypeName()
-            .orElseGet(() -> file.getFileName().toString().replaceFirst("\\.java$", ""));
+                         .orElseGet(() -> file.getFileName().toString().replaceFirst("\\.java$", ""));
         nodesToRemove = new HashSet<>();
 
         int beforeReplacements = totalReplacements;
@@ -353,7 +353,7 @@ public final class Extractor {
         if (totalReplacements > beforeReplacements) {
             String fqn = helperPackage + ".I18n";
             boolean alreadyImported = cu.getImports().stream()
-                .anyMatch(imp -> imp.getNameAsString().equals(fqn));
+                                        .anyMatch(imp -> imp.getNameAsString().equals(fqn));
             if (!alreadyImported) cu.addImport(fqn);
         }
     }
@@ -370,7 +370,7 @@ public final class Extractor {
     private boolean rowContainsRegisteredUIArray(ArrayInitializerExpr row) {
         for (Expression v : row.getValues()) {
             if (v instanceof ArrayCreationExpr ac
-                && uiConstructors.containsKey(ac.getElementType().asString())) {
+                        && uiConstructors.containsKey(ac.getElementType().asString())) {
                 return true;
             }
         }
@@ -535,8 +535,8 @@ public final class Extractor {
             String existing = bundle.get(key);
             if (!existing.equals(text)) {
                 System.err.println("WARN: constraint-key slug collision for '" + key
-                    + "': existing \"" + existing + "\" vs new \"" + text + "\""
-                    + " — runtime will only find the first; adjust source text.");
+                                           + "': existing \"" + existing + "\" vs new \"" + text + "\""
+                                           + " — runtime will only find the first; adjust source text.");
             }
             return;
         }
@@ -591,7 +591,7 @@ public final class Extractor {
 
         // Numeric form: @I18N(1, 3)
         boolean allNumeric = Arrays.stream(tokens)
-            .allMatch(t -> t.trim().matches("\\d+"));
+                                   .allMatch(t -> t.trim().matches("\\d+"));
         if (allNumeric) {
             for (String tok : tokens) textPos.add(Integer.parseInt(tok.trim()));
             return new I18nDirective(textPos.stream().mapToInt(Integer::intValue).toArray(), -1);
@@ -619,7 +619,7 @@ public final class Extractor {
      * </ul>
      */
     private String buildI18nPreferredKey(String keyValue, Expression textExpr,
-                                          boolean isFirstTextInRow) {
+                                         boolean isFirstTextInRow) {
         if (keyValue == null || keyValue.isEmpty()) return null;
         String base = currentClass + "." + toSlug(keyValue);
         if (isFirstTextInRow) return base;
@@ -632,20 +632,68 @@ public final class Extractor {
     /** Slug helper — same logic as makeKey uses internally; extracted for reuse. */
     private static String toSlug(String text) {
         return text.toLowerCase(Locale.ROOT)
-            .replaceAll("\\{[^}]*}", " ")
-            .replaceAll("[^a-z0-9 ]+", " ")
-            .strip()
-            .replaceAll("\\s+", ".")
-            .replaceAll("^\\.+|\\.+$", "");
+                   .replaceAll("\\{[^}]*}", " ")
+                   .replaceAll("[^a-z0-9 ]+", " ")
+                   .strip()
+                   .replaceAll("\\s+", ".")
+                   .replaceAll("^\\.+|\\.+$", "");
+    }
+
+    /**
+     * Best-effort inverse of {@link #toSlug}: turn a bundle key back into readable
+     * English, used to seed a value when a key is referenced via {@code I18n.tr}
+     * but missing from the bundle.
+     *
+     * <p>A leading {@code ClassName.} segment (one that starts with an upper-case
+     * letter) is dropped; the remaining dot-separated words are title-cased and
+     * joined with spaces. The result is intentionally rough — a sensible starting
+     * value for the developer to refine, not a finished translation.</p>
+     *
+     * <pre>
+     *   DataCaptureUploadPane.select.file -&gt; "Select File"
+     *   data.source                       -&gt; "Data Source"
+     *   log                               -&gt; "Log"
+     * </pre>
+     */
+    public static String humanizeKey(String key) {
+        if (key == null || key.isEmpty()) return "";
+        String local = key;
+        int dot = key.indexOf('.');
+        if (dot > 0 && Character.isUpperCase(key.charAt(0))) {
+            local = key.substring(dot + 1);
+        }
+        if (local.isEmpty()) local = key;
+
+        StringBuilder out = new StringBuilder(local.length());
+        for (String word : local.split("\\.")) {
+            if (word.isEmpty()) continue;
+            if (out.length() > 0) out.append(' ');
+            out.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) out.append(word.substring(1));
+        }
+        return out.length() == 0 ? key : out.toString();
+    }
+
+    /**
+     * Suggested English value for an unresolved key: the {@link #humanizeKey} text
+     * followed by one {@code {0..argCount-1}} MessageFormat placeholder per call
+     * argument, matching the {@code I18n.tr(key, a, b)} arity at the call site.
+     */
+    public static String suggestValue(String key, int argCount) {
+        StringBuilder sb = new StringBuilder(humanizeKey(key));
+        for (int i = 0; i < argCount; i++) {
+            sb.append(" {").append(i).append('}');
+        }
+        return sb.toString();
     }
 
     // -- Method-return processing (Pass 2) ------------------------------------------
 
     /** Methods we never want to extract from regardless of content. */
     private static final Set<String> SKIP_METHOD_NAMES = Set.of(
-        "toString", "hashCode", "equals", "clone",
-        "getClass", "getName", "getId", "getKey", "getCode"
-    );
+            "toString", "hashCode", "equals", "clone",
+            "getClass", "getName", "getId", "getKey", "getCode"
+                                                               );
 
     private void processMethodReturn(MethodDeclaration method) {
         if (!"String".equals(method.getTypeAsString())) return;
@@ -750,8 +798,8 @@ public final class Extractor {
             return;
         }
         if (e instanceof BinaryExpr bin
-                && bin.getOperator() == BinaryExpr.Operator.PLUS
-                && bin.findFirst(StringLiteralExpr.class).isPresent()) {
+                    && bin.getOperator() == BinaryExpr.Operator.PLUS
+                    && bin.findFirst(StringLiteralExpr.class).isPresent()) {
             flattenInto(bin.getLeft(), parts);
             flattenInto(bin.getRight(), parts);
             return;
@@ -793,8 +841,8 @@ public final class Extractor {
 
     private static boolean isStringFormat(MethodCallExpr c) {
         return "format".equals(c.getNameAsString())
-            && c.getScope().filter(s -> s instanceof NameExpr n
-                  && "String".equals(n.getNameAsString())).isPresent();
+                       && c.getScope().filter(s -> s instanceof NameExpr n
+                                                           && "String".equals(n.getNameAsString())).isPresent();
     }
 
     private Translatable fromStringFormat(MethodCallExpr call) {
@@ -823,8 +871,8 @@ public final class Extractor {
             if (conv == 'n') { pattern.append('\n'); continue; }
 
             int idx = (m.group(1) != null)
-                ? Integer.parseInt(m.group(1)) - 1
-                : auto++;
+                      ? Integer.parseInt(m.group(1)) - 1
+                      : auto++;
             pattern.append('{').append(idx);
             switch (conv) {
                 case 'd', 'o', 'x', 'X' -> pattern.append(",number,integer");
@@ -843,8 +891,8 @@ public final class Extractor {
 
     private static boolean isMessageFormat(MethodCallExpr c) {
         return "format".equals(c.getNameAsString())
-            && c.getScope().filter(s -> s instanceof NameExpr n
-                  && "MessageFormat".equals(n.getNameAsString())).isPresent();
+                       && c.getScope().filter(s -> s instanceof NameExpr n
+                                                           && "MessageFormat".equals(n.getNameAsString())).isPresent();
     }
 
     private Translatable fromMessageFormat(MethodCallExpr call) {
@@ -853,16 +901,16 @@ public final class Extractor {
         if (!(args.get(0) instanceof StringLiteralExpr litFmt)) return null;
 
         return new Translatable(
-            litFmt.asString(),
-            new ArrayList<>(args.subList(1, args.size())));
+                litFmt.asString(),
+                new ArrayList<>(args.subList(1, args.size())));
     }
 
     // -- StringBuilder / StringBuffer ----------------------------------------------
 
     private static boolean isStringBuilderToString(MethodCallExpr c) {
         return "toString".equals(c.getNameAsString())
-            && c.getArguments().isEmpty()
-            && c.getScope().isPresent();
+                       && c.getArguments().isEmpty()
+                       && c.getScope().isPresent();
     }
 
     private Translatable fromStringBuilder(MethodCallExpr toStr) {
@@ -883,9 +931,9 @@ public final class Extractor {
         Expression current = toStr.getScope().orElseThrow();
 
         while (current instanceof MethodCallExpr call
-               && "append".equals(call.getNameAsString())
-               && call.getArguments().size() == 1
-               && call.getScope().isPresent()) {
+                       && "append".equals(call.getNameAsString())
+                       && call.getArguments().size() == 1
+                       && call.getScope().isPresent()) {
             appendArgs.push(call.getArgument(0));
             current = call.getScope().get();
         }
@@ -908,9 +956,9 @@ public final class Extractor {
         if (method == null) return null;
 
         VariableDeclarator decl = method.findAll(VariableDeclarator.class).stream()
-            .filter(v -> v.getNameAsString().equals(varName))
-            .filter(v -> isBuilderType(v.getTypeAsString()))
-            .findFirst().orElse(null);
+                                        .filter(v -> v.getNameAsString().equals(varName))
+                                        .filter(v -> isBuilderType(v.getTypeAsString()))
+                                        .findFirst().orElse(null);
         if (decl == null) return null;
         if (!(decl.getInitializer().orElse(null) instanceof ObjectCreationExpr ctor)) return null;
         if (!isBuilderType(ctor.getTypeAsString())) return null;
@@ -919,8 +967,8 @@ public final class Extractor {
         if (usageBlock == null) return null;
 
         List<NameExpr> refs = method.findAll(NameExpr.class).stream()
-            .filter(n -> n.getNameAsString().equals(varName))
-            .toList();
+                                    .filter(n -> n.getNameAsString().equals(varName))
+                                    .toList();
 
         record Anchor(Position pos, Expression arg) {}
         List<Anchor> appendArgs = new ArrayList<>();
@@ -942,16 +990,16 @@ public final class Extractor {
             // Walk forward through any chain: sb.append(a).append(b).append(c)
             MethodCallExpr cursor = parent;
             while (cursor != null
-                   && "append".equals(cursor.getNameAsString())
-                   && cursor.getArguments().size() == 1) {
+                           && "append".equals(cursor.getNameAsString())
+                           && cursor.getArguments().size() == 1) {
                 Position p = cursor.getArgument(0).getRange()
-                    .map(r -> r.begin).orElse(new Position(0, 0));
+                                   .map(r -> r.begin).orElse(new Position(0, 0));
                 appendArgs.add(new Anchor(p, cursor.getArgument(0)));
 
                 final MethodCallExpr cur = cursor;     // snapshot for lambda
                 Node above = cur.getParentNode().orElse(null);
                 cursor = (above instanceof MethodCallExpr next
-                          && next.getScope().filter(s -> s == cur).isPresent())
+                                  && next.getScope().filter(s -> s == cur).isPresent())
                          ? next : null;
             }
 
@@ -995,7 +1043,7 @@ public final class Extractor {
         while (m.find()) {
             int idx = Integer.parseInt(m.group(1));
             m.appendReplacement(out,
-                Matcher.quoteReplacement("{" + (idx + offset) + m.group(2)));
+                                Matcher.quoteReplacement("{" + (idx + offset) + m.group(2)));
         }
         m.appendTail(out);
         return out.toString();
@@ -1017,9 +1065,43 @@ public final class Extractor {
 
     private static final Pattern PROPERTY_KEY = Pattern.compile("^[a-z][a-z0-9._-]*$");
     private static final Pattern CONSTANT     = Pattern.compile("^[A-Z][A-Z0-9_]*$");
-    private static final Pattern SQL_KEYWORD  = Pattern.compile(
-        "(?i)\\b(SELECT|FROM|WHERE|INSERT INTO|UPDATE|DELETE FROM|CREATE TABLE|DROP TABLE|ALTER TABLE|JOIN)\\b");
-    private static final Pattern HAS_LETTERS  = Pattern.compile(".*[A-Za-z]{2,}.*");
+
+    /**
+     * SQL detection by statement <em>shape</em>, not by single keywords.
+     *
+     * <p>The previous version flagged any string containing a bare {@code SELECT},
+     * {@code FROM}, {@code WHERE}, {@code UPDATE} or {@code JOIN} — but those are
+     * ordinary English words. "Please select a valid file", "select an item from
+     * the list", "update your profile", "join the meeting" are prose, not SQL, and
+     * were being silently dropped from extraction. We now require a recognisable
+     * multi-token SQL signature, which English prose effectively never produces:</p>
+     * <ul>
+     *   <li>{@code INSERT INTO}, {@code DELETE FROM}, {@code UPDATE <t> SET}</li>
+     *   <li>{@code CREATE|DROP|ALTER|TRUNCATE TABLE|VIEW|INDEX|SEQUENCE|MATERIALIZED}</li>
+     *   <li>{@code SELECT … FROM …} together with {@code WHERE|JOIN|GROUP BY|ORDER BY|HAVING}</li>
+     *   <li>{@code SELECT … (*|,) … FROM} (a column list / star before FROM)</li>
+     * </ul>
+     *
+     * <p>{@code (?is)} = case-insensitive + DOTALL so multi-line query strings are
+     * still matched. A bare {@code SELECT col FROM t} with no other clause slips
+     * through to extraction — a reviewable false negative, far preferable to
+     * silently dropping every UI string that contains the word "select".</p>
+     */
+    private static final Pattern SQL_SIGNATURE = Pattern.compile(
+            "(?is)("
+                    + "\\bINSERT\\s+INTO\\b"
+                    + "|\\bDELETE\\s+FROM\\b"
+                    + "|\\bUPDATE\\s+\\S+\\s+SET\\b"
+                    + "|\\b(?:CREATE|DROP|ALTER|TRUNCATE)\\s+(?:TABLE|VIEW|INDEX|SEQUENCE|MATERIALIZED)\\b"
+                    + "|\\bSELECT\\b.*\\bFROM\\b.*\\b(?:WHERE|JOIN|GROUP\\s+BY|ORDER\\s+BY|HAVING)\\b"
+                    + "|\\bSELECT\\b.*[*,].*\\bFROM\\b"
+                    + ")");
+
+    // "Contains at least two consecutive letters." Uses find() (not matches()) so
+    // strings with embedded newlines aren't rejected — '.' doesn't cross line
+    // terminators, which made the old `.*[A-Za-z]{2,}.*` + matches() drop any
+    // multi-line message.
+    private static final Pattern HAS_LETTERS  = Pattern.compile("[A-Za-z]{2,}");
 
     private boolean shouldExtract(String s) {
         if (s == null) return false;
@@ -1027,10 +1109,10 @@ public final class Extractor {
         if (t.isEmpty() || t.length() < 2) return false;
         if (PROPERTY_KEY.matcher(t).matches()) return false;
         if (CONSTANT.matcher(t).matches()) return false;
-        if (SQL_KEYWORD.matcher(t).find()) return false;
+        if (SQL_SIGNATURE.matcher(t).find()) return false;
         if (t.startsWith("/") || t.startsWith("http://") || t.startsWith("https://")
-            || t.startsWith("file://") || t.startsWith("jdbc:")) return false;
-        return HAS_LETTERS.matcher(t).matches();
+                    || t.startsWith("file://") || t.startsWith("jdbc:")) return false;
+        return HAS_LETTERS.matcher(t).find();
     }
 
     // -- Key naming ----------------------------------------------------------------
@@ -1052,8 +1134,8 @@ public final class Extractor {
         } else {
             String[] words = toSlug(pattern).split("\\.");
             String slugStr = words.length == 0 || words[0].isEmpty()
-                ? "msg"
-                : String.join(".", Arrays.asList(words).subList(0, Math.min(4, words.length)));
+                             ? "msg"
+                             : String.join(".", Arrays.asList(words).subList(0, Math.min(4, words.length)));
             if (slugStr.length() > 60) slugStr = slugStr.substring(0, 60);
             base = (className.isEmpty() ? "" : className + ".") + slugStr;
         }
